@@ -1,0 +1,4 @@
+Before creating any project, go through with it's project planning that will enable us to think and know what we are going
+to build and how are we going to do that.
+
+See the steps in 'Steps for Project Planning.png'.
