@@ -37,10 +37,38 @@ if (navigator.geolocation)
       // marker method displays the marker on the coords coordinates.
       // Here we are creating a marker on the coords and then adding it to the map that leaflet gave us
       // After that, created the popup with A pretty... text in it and opened it with openPopup() method.
-      L.marker(coords)
-        .addTo(map)
-        .bindPopup('A pretty CSS popup.<br> Easily customizable.')
-        .openPopup();
+      // L.marker(coords)
+      //   .addTo(map)
+      //   .bindPopup('A pretty CSS popup.<br> Easily customizable.')
+      //   .openPopup();
+
+      // Now, we want to add the eventListener to the map so that when a user clicks on some coordinates, the marker
+      // appears on those coordinates. For that, add eventListener on the map object returned by the lefalet library.
+      // on eventHandler will call a cb function and will pass an event to it as well when map is clicked which will have
+      // the coordinates of the point that was clicked on map.
+      map.on('click', function (mapEvent) {
+        // Get the coordinates that the mapEvent has and add a marker to the map with popup.
+        const lat = mapEvent.latlng.lat;
+        const lng = mapEvent.latlng.lng;
+        // console.log(mapEvent, lat, lng);
+
+        // Add marker to clicked coords.Here what we are doing is that, we are first creatring a marker on lat, lng coords
+        // then we are adding that marker to the map, then we are creating a popup using L.popup() and giving all features to it
+        // and then binding that opoup to the marker and then opening that popup using openPopup().
+        L.marker([lat, lng])
+          .addTo(map)
+          .bindPopup(
+            L.popup({
+              maxWidth: 250,
+              maxHeight: 100,
+              autoClose: false,
+              closeOnClick: false,
+              className: 'running-popup',
+              content: 'Workout',
+            })
+          )
+          .openPopup();
+      });
     },
     function () {
       alert('Could not get your location!');
