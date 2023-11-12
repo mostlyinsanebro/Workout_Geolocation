@@ -9,6 +9,7 @@ const inputDuration = document.querySelector('.form__input--duration');
 const inputCadence = document.querySelector('.form__input--cadence');
 const inputElevation = document.querySelector('.form__input--elevation');
 const type = document.querySelector('.form__input--type');
+const workouts = document.querySelector('.workouts');
 
 // Creating classes for storing Workout data.
 
@@ -84,6 +85,8 @@ class App {
     form.addEventListener('submit', this._newWorkout.bind(this));
 
     type.addEventListener('change', this._toggleElevationField.bind(this));
+
+    workouts.addEventListener('click', this._moveToMarker.bind(this));
   }
 
   _getLocation() {
@@ -277,6 +280,30 @@ class App {
 
     // Now, add the html as the sibling of the form element after it's end.
     form.insertAdjacentHTML('afterend', html);
+  }
+
+  _moveToMarker(e) {
+    // Use eventDelegation to get the clicked element.
+    // Get the closest parent element of the clicked element with the workout class. That will give us the
+    // whole clicked workout element
+    const markerEl = e.target.closest('.workout');
+
+    // Put guard clause as well, in case clicked element does not have a parent element with '.workout' class.
+    if (!markerEl) return;
+
+    //console.log(markerEl.dataset.id);
+
+    const workout = this.#workouts.find(
+      wrkobj => wrkobj.id === markerEl.dataset.id
+    );
+
+    // # imp
+    this.#map.setView(workout.coords, 14, {
+      animate: true,
+      pan: {
+        duration: 1,
+      },
+    });
   }
 }
 
