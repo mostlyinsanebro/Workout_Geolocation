@@ -72,6 +72,7 @@ class Cycling extends Workout {
 
 /////////////////////////////////////////////////////////
 // PROJECT ARCHITECTURE.
+
 class App {
   #map;
   #mapEvent;
@@ -79,6 +80,7 @@ class App {
 
   constructor() {
     this._getLocation();
+    this._getWorkoutData();
 
     // the this keywork in addEventListener points to the DOM element to which the eventListener is attached.
     // So , we have to use the bind function which binds the this keyword to the current app object.
@@ -113,6 +115,8 @@ class App {
     }).addTo(this.#map);
 
     this.#map.on('click', this._showForm.bind(this));
+
+    this.#workouts.forEach(workout => this._renderMarkerOnMap(workout));
   }
 
   _showForm(mapE) {
@@ -199,7 +203,7 @@ class App {
       workout = new Cycling([lat, lng], distance, duration, elevation);
     }
 
-    // Add workout to workout array
+    // Add workout to workouts array
     this.#workouts.push(workout);
 
     // Render the marker on the map with the desired color.
@@ -208,6 +212,8 @@ class App {
     this._renderWorkout(workout);
 
     this._hideForm();
+
+    this._storeData();
   }
 
   _renderMarkerOnMap(workout) {
@@ -304,6 +310,23 @@ class App {
         duration: 1,
       },
     });
+  }
+
+  _storeData() {
+    // setItem takes two parameters, key and value in string format.
+    localStorage.setItem('workouts', JSON.stringify(this.#workouts));
+  }
+
+  _getWorkoutData() {
+    const data = JSON.parse(localStorage.getItem('workouts'));
+
+    if (!data) return;
+    this.#workouts = data;
+
+    data.forEach(workout => this._renderWorkout(workout));
+
+    // data.forEach(workout => this._renderMarkerOnMap(workout));
+    // Add the workouts marker on the map after it is loaded.
   }
 }
 
