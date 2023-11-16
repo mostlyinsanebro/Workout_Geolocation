@@ -2,6 +2,7 @@
 // CODE BEFORE REFACTORING
 'use strict';
 
+
 // Select the elements
 const form = document.querySelector('.form');
 const inputDistance = document.querySelector('.form__input--distance');
