@@ -2,3 +2,119 @@ Before creating any project, go through with it's project planning that will ena
 to build and how are we going to do that.
 
 See the steps in 'Steps for Project Planning.png'.
+
+1. Getting the geolocation
+Using the navigator.geolocation API, I fetched the current location [latitude and longitude] of the browser and after that 
+we will are going to display a map using the leaflet library which will be centered on the current location of the device.
+
+2. Displaying the map on the current location.
+
+Include the leaflet library in our script.
+
+Include the code to render the map on the current cooordinates from leaflet website.
+
+Also, change the change the theme of the map in which it is displayed to -> fr/hot.
+
+Note -> The global variables used in a script can also be used by all the other scripts that are called
+after that script. In the same way, we are able to use leaflet library's variables and methods in our script.js
+
+3. Displaying a Map Marker
+
+Get the coordinates of the point clicked on the map. For that, we can not use the eventListener on the map element
+because it will be unable to give us the coordinates clicked instead we will use the map object that leaflet returned
+and add an eventListener to it and get the coordinates of the point clicked. -- Done
+
+After that, add popup to the marker which does not close when another popup opens or when we click on the map. The popup
+must have some content and also add the running class to the popup using leaflet documentation. -- Done
+
+4. Rendering the Workout Input from
+
+Now, we want that when the user clicks on the map, then the input form is displayed on the sidebar and when we submit that form
+then the marker is displayed on the screen where the user clicked. -- Done
+
+
+On submitting of the form, we want to clear all the inputr values as well. -- Done
+
+
+We also want thet when the event is changes from running to cycling, then the cadence also changes to elevation gain. -- Done
+
+5. Project Architecture
+
+6. Refactoring for Project Architecture
+
+Create the App class and write _getPosition(),_loadMap(), _toggleElevationField() and showForm() functions and 
+call the _getPosition() in the constructor of the App class, so as soon as an object is created from the App class, 
+the _getPosition() function will be called which will call the _loadMap() function inturn and the map will be loaded on 
+the screen.   
+
+Also, add eventListeners to the constructor of the App class and break them into their respective functions.
+
+Also, make the variables private to the App class.
+
+7. Managing Workout Data -> Creating Classes
+
+We are going to create Workout class now which will have the common data of both workout types in it -> coords,distance,
+duration.
+
+We will create a constructor for them.
+Also, calculate date and id for each workout as through id only they will be identified uniquely.
+
+We will also create two Child classes of Workout class -> Running and Cycling. In running class, along with the three fields,
+we will also define the cadence in Running and also calculate the Pace which is in min/KM.
+
+In the Cycling class, we will also set elevationGain along with the three fields set in Workout class and then calcate speed
+which is in km/hr.
+
+
+8. Creating a New Workout
+
+Now, on submitting the input form , _newWorkout() method is called and that is written in the constructor of the App class.
+So, we want that when the user submits the input form, then first the input fields are validated that whether the data is 
+correct in them or not and after that, if the workout type is running then we create a new running workout and add it in the
+workous array. If the workout is cycling, then we create the Cycling workout object and add it in the workouts array.
+
+
+9. Rendering Workouts
+Create and call a new method _renderWorkout() in _newWorkout() method.Using this method add the html element to the sidebar
+where the html element will be one workout in the list. -- done
+
+Also, add _setDescription() in the Workout class and call them in the constructor of child classes. -- done
+
+Now, insert as the sibling of the form element after the end of the form. -- done
+
+So, we will add the new html element as the sibling of the form and after the end of the form because if we add the html element
+as the child of workouts element, then we would have to add it either as the firstChild or the lastChild and we do not want any 
+of those options. -- done
+
+Also, change the popup text. -- done
+
+Hide the input form and make the workout render in a way that we want. -- done
+
+
+10. Move to Marker on Click.
+
+Now, we want to move the marker whose corresponding workout we clicked in the sidebar.
+
+For that, add an eventListener to the sidebar element i.e. .workouts element and then get the id of clicked element. 
+
+Now, search for the object with that id in the workouts array and store it in the local workout variable.
+
+Now, get the coordinates of the workout object stored in the local workout element and then go to those coordinates
+using the setView() of the leaflet library.
+
+11. Working with localStorage
+
+Now, what we want is that our application stores the workout data in the local storage and then renders all that data back
+to the map when we reload the page.
+
+For that, we will use the localStorage API that the browser provides us.
+
+Create a method storeWorkoutData() which will store the data of the workouts array in the local storage as soon as a new
+workout is created.
+
+Then , get the data in the localStorage() in another method and reload the page and call that method in the constructor of 
+the App class, so that whenever the website is reloaded the workouts and their markers are reloaded on the map.
+
+Strore data in localStorage. -> done
+
+Get that data in a var in another method.
