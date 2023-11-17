@@ -1,36 +1,30 @@
-// REFACTORED CODE
-// CODE BEFORE REFACTORING
 'use strict';
 
-
-// Select the elements
+//const mapEl = document.querySelector('.map');
 const form = document.querySelector('.form');
-const inputDistance = document.querySelector('.form__input--distance');
-const inputDuration = document.querySelector('.form__input--duration');
-const inputCadence = document.querySelector('.form__input--cadence');
-const inputElevation = document.querySelector('.form__input--elevation');
-const type = document.querySelector('.form__input--type');
+const distanceInput = document.querySelector('.form__input--distance');
+const durationInput = document.querySelector('.form__input--duration');
+const cadenceInput = document.querySelector('.form__input--cadence');
+const elevationGainInput = document.querySelector('.form__input--elevation');
+const inputType = document.querySelector('.form__input--type');
 const workouts = document.querySelector('.workouts');
-
-// Creating classes for storing Workout data.
 
 class Workout {
   date = new Date();
   id = (Date.now() + '').slice(-10);
 
   constructor(coords, distance, duration) {
-    this.coords = coords; // [lat,lng]
-    this.distance = distance; // km
-    this.duration = duration; // min
+    this.coords = coords;
+    this.distance = distance;
+    this.duration = duration;
   }
 
   _setDescription() {
     // prettier-ignore
-    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-
+    const month = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     this.description = `${this.type[0].toUpperCase()}${this.type.slice(1)} on ${
-      months[this.date.getMonth()]
-    } ${this.date.getDate()}`;
+      month[this.date.getMonth()]
+    } ${this.date.getDate()} `;
   }
 }
 
@@ -39,208 +33,175 @@ class Running extends Workout {
   constructor(coords, distance, duration, cadence) {
     super(coords, distance, duration);
     this.cadence = cadence;
-    this.calcPace();
+    this._caclPace();
     this._setDescription();
   }
 
-  calcPace() {
+  _caclPace() {
     this.pace = this.duration / this.distance;
-    return this.pace;
   }
 }
 
 class Cycling extends Workout {
   type = 'cycling';
-  constructor(coords, distance, duration, elevationGain) {
+  constructor(coords, distance, duration, elevation) {
     super(coords, distance, duration);
-    this.elevationGain = elevationGain;
-    this.calcSpeed();
+    this.elevation = elevation;
+    this._calcSpeed();
     this._setDescription();
   }
 
-  calcSpeed() {
+  _calcSpeed() {
     this.speed = this.distance / (this.duration / 60);
-    return this.speed;
   }
 }
 
-// const run1 = new Running([37, 37], 10, 120, 100);
-
-// const cycling1 = new Cycling([41, 41], 10, 130, 120);
-
-// console.log(run1);
-// console.log(cycling1);
-
-/////////////////////////////////////////////////////////
-// PROJECT ARCHITECTURE.
+let workoutLatitude, workoutLongitude;
+let map, workout;
 
 class App {
   #map;
   #mapEvent;
   #workouts = [];
-
   constructor() {
     this._getLocation();
-    this._getWorkoutData();
-
-    // the this keywork in addEventListener points to the DOM element to which the eventListener is attached.
-    // So , we have to use the bind function which binds the this keyword to the current app object.
     form.addEventListener('submit', this._newWorkout.bind(this));
-
-    type.addEventListener('change', this._toggleElevationField.bind(this));
-
-    workouts.addEventListener('click', this._moveToMarker.bind(this));
+    inputType.addEventListener('change', this._toggleInputType);
+    workouts.addEventListener('click', this._moveMarkerOnClick.bind(this));
+    this._getLocalStorage();
   }
 
   _getLocation() {
+    // Use the geolocation API and render the map and marker on the current location.
     if (navigator.geolocation)
       navigator.geolocation.getCurrentPosition(
         this._loadMap.bind(this),
         function () {
-          alert('Could not get your location!');
+          return alert('Could not get your current location!');
         }
       );
   }
 
   _loadMap(position) {
-    const latitude = position.coords.latitude;
-    const longitude = position.coords.longitude;
-    const coords = [latitude, longitude];
-    console.log(`https://www.google.com/maps/@${latitude},${longitude}`);
-
-    this.#map = L.map('map').setView(coords, 13);
+    //console.log(this);
+    const lat = position.coords.latitude;
+    const long = position.coords.longitude;
+    map = L.map('map').setView([lat, long], 13);
 
     L.tileLayer('https://tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(this.#map);
+    }).addTo(map);
 
-    this.#map.on('click', this._showForm.bind(this));
+    map.on('click', this._showForm.bind(this));
 
-    this.#workouts.forEach(workout => this._renderMarkerOnMap(workout));
+    this.#workouts.forEach(wrk => this._renderWorkoutMarker(wrk));
   }
 
   _showForm(mapE) {
     this.#mapEvent = mapE;
-
+    //console.log(this.#mapEvent);
     form.classList.remove('hidden');
-
-    inputDistance.focus();
+    distanceInput.focus();
   }
 
-  // understand this
   _hideForm() {
-    // Clearing the input fields.
-    inputDistance.value =
-      inputDuration.value =
-      inputCadence.value =
-      inputElevation.value =
-        '';
-
-    // inputDistance.focus();
+    // What we are doing here is that when the form will be sumitted and _newWorkout function will be called
+    // then this function will be called and then then we need to hide it, so we will first set the style to none
+    // because on adding the hidden class, it will translate to -30 vertically which creates a sliding effect upwards
+    // and we do not want that, so to tackle that, first we set the style to none and after a second make it grid again
+    // so when new workout is to be added the submit form appears with a sliding effect.
 
     form.style.display = 'none';
     form.classList.add('hidden');
 
-    setTimeout(() => (form.style.display = 'grid'), 1000);
-    //form.style.display = 'grid';
-  }
-
-  _toggleElevationField() {
-    inputCadence.closest('.form__row').classList.toggle('form__row--hidden');
-
-    inputElevation.closest('.form__row').classList.toggle('form__row--hidden');
+    setTimeout(function () {
+      form.style.display = 'grid';
+    }, 1000);
   }
 
   _newWorkout(e) {
     e.preventDefault();
+    const validateInputs = (...inputs) =>
+      inputs.every(inp => Number.isFinite(inp));
 
-    // Function to validate inputs
-    // (...inputs) -> way to take an array as input.
-    const isNumbers = (...inputs) => inputs.every(inp => Number.isFinite(inp));
-    // This function is checking whether every one of the numbers present in the array passes to this function is in fact
-    // a number or not, if yes, this function will return true. Else, if even one of the value in the array is not a number
-    // it will return false, which we can use.
+    const positiveNumbers = (...inputs) => inputs.every(inp => inp > 0);
+    workoutLatitude = this.#mapEvent.latlng.lat;
+    workoutLongitude = this.#mapEvent.latlng.lng;
 
-    const isPositives = (...inputs) => inputs.every(inp => inp > 0);
-
-    // Take the inputs from the form.
-    const input = type.value;
-    const distance = +inputDistance.value; // It comes in the form of string, so convert it to number by using +.
-    const duration = +inputDuration.value;
-    let workout;
+    const distance = Number(distanceInput.value);
+    const duration = Number(durationInput.value);
     const lat = this.#mapEvent.latlng.lat;
     const lng = this.#mapEvent.latlng.lng;
-    // Pass array to the constructor of both workout types and not the whole object as this.#mapEvent.latlng
 
-    // If the input value is running, take cadence as input, validate the inputs and create a new Running class and add it in
-    // workouts array.
-    if (input == 'running') {
-      const cadence = +inputCadence.value;
+    if (inputType.value == 'running') {
+      const cadence = Number(cadenceInput.value);
 
-      // Validate inputs
       if (
-        !isNumbers(distance, duration, cadence) ||
-        !isPositives(distance, duration, cadence)
-      )
-        return alert('Please enter positive numbers!');
+        !validateInputs(distance, duration, cadence) ||
+        !positiveNumbers(distance, duration, cadence)
+      ) {
+        return alert('Please enter positive numbers as input!');
+      }
 
-      // Create new running object
       workout = new Running([lat, lng], distance, duration, cadence);
+      //console.log(workout);
     }
 
-    // If the input value is cycling, take elevation as input, validate the inputs and create a new Running class and add it in
-    // workouts array.
-    if (input == 'cycling') {
-      const elevation = +inputElevation.value;
+    if (inputType.value == 'cycling') {
+      const elevation = +elevationGainInput.value;
 
-      // Validate inputs -> not checking -ve for elevation as it can be -ve.
       if (
-        !isNumbers(distance, duration, elevation) ||
-        !isPositives(distance, duration)
-      )
-        return alert('Please enter positive numbers!');
+        !validateInputs(distance, duration, elevation) ||
+        !positiveNumbers(distance, duration)
+      ) {
+        return alert('Please enter positive numbers as input!');
+      }
 
       workout = new Cycling([lat, lng], distance, duration, elevation);
+      //console.log(workout);
     }
 
-    // Add workout to workouts array
     this.#workouts.push(workout);
+    // console.log(this.#workouts);
 
-    // Render the marker on the map with the desired color.
-    this._renderMarkerOnMap(workout);
+    // Clear the inputs
+    distanceInput.value =
+      durationInput.value =
+      cadenceInput.value =
+      elevationGainInput.value =
+        '';
+    this._renderWorkoutMarker(workout);
 
-    this._renderWorkout(workout);
+    this._addWorkoutToSidebar(workout);
 
     this._hideForm();
 
-    this._storeData();
+    this._addToLocalStorage();
   }
 
-  _renderMarkerOnMap(workout) {
-    // Now, we have set coords == [lat,lng] of the current Workout in workout, so use that.
-    // Also add type filed to the running and cycling classes to know which type of activity is that and we will sue it for
-    // the popup color.
+  _moveMarkerOnClick(e) {
+    const target = e.target;
 
-    L.marker(workout.coords)
-      .addTo(this.#map)
-      .bindPopup(
-        L.popup({
-          maxWidth: 250,
-          maxHeight: 100,
-          autoClose: false,
-          closeOnClick: false,
-          className: `${workout.type}-popup`,
-          content: `${workout.description}`,
-        })
-      )
-      .openPopup();
+    const clickedElement = target.closest('.workout');
+
+    if (!clickedElement) return;
+
+    const id = clickedElement.dataset.id;
+
+    const clickedObject = this.#workouts.find(wrk => wrk.id === id);
+
+    map.setView(clickedObject.coords, 14, {
+      animate: true,
+      pan: {
+        duration: 1,
+      },
+    });
   }
 
-  _renderWorkout(workout) {
-    // First, add the common html of both cycling and running workout types to the html element.
+  _addWorkoutToSidebar(workout) {
     let html = `
-        <li class="workout workout--${workout.type}" data-id=${workout.id}>
+         <li class="workout ${workout.type}" data-id=${workout.id}>
           <h2 class="workout__title">${workout.description}</h2>
           <div class="workout__details">
             <span class="workout__icon">${
@@ -253,81 +214,73 @@ class App {
             <span class="workout__icon">⏱</span>
             <span class="workout__value">${workout.duration}</span>
             <span class="workout__unit">min</span>
-          </div>
-          `;
+           </div>
+           `;
 
-    // Then add the html to the cycling and running workout types as per the workout type.
     if (workout.type === 'running')
       html += `
-        <div class="workout__details">
-            <span class="workout__icon">⚡️</span>
-            <span class="workout__value">${workout.pace.toFixed(1)}</span>
-            <span class="workout__unit">min/km</span>
-          </div>
-          <div class="workout__details">
-            <span class="workout__icon">🦶🏼</span>
-            <span class="workout__value">${workout.cadence}</span>
-            <span class="workout__unit">spm</span>
-          </div>
-        </li>`;
+    <div class="workout__details">
+    <span class="workout__icon">⚡️</span>
+    <span class="workout__value">${workout.pace}</span>
+    <span class="workout__unit">min/km</span>
+  </div>
+  <div class="workout__details">
+    <span class="workout__icon">🦶🏼</span>
+    <span class="workout__value">${workout.cadence}</span>
+    <span class="workout__unit">spm</span>
+  </div>
+</li>`;
 
     if (workout.type === 'cycling')
       html += `
-       <div class="workout__details">
-       <span class="workout__icon">⚡️</span>
-       <span class="workout__value">${workout.speed.toFixed(1)}</span>
-       <span class="workout__unit">km/h</span>
-       </div>
-       <div class="workout__details">
-       <span class="workout__icon">⛰</span>
-       <span class="workout__value">${workout.elevationGain}</span>
-       <span class="workout__unit">m</span>
-      </div>
-      </li>`;
+    <div class="workout__details">
+            <span class="workout__icon">⚡️</span>
+            <span class="workout__value">${workout.speed}</span>
+            <span class="workout__unit">km/h</span>
+          </div>
+          <div class="workout__details">
+            <span class="workout__icon">⛰</span>
+            <span class="workout__value">${workout.elevation}</span>
+            <span class="workout__unit">m</span>
+          </div>
+        </li>`;
 
-    // Now, add the html as the sibling of the form element after it's end.
     form.insertAdjacentHTML('afterend', html);
   }
 
-  _moveToMarker(e) {
-    // Use eventDelegation to get the clicked element.
-    // Get the closest parent element of the clicked element with the workout class. That will give us the
-    // whole clicked workout element
-    const markerEl = e.target.closest('.workout');
-
-    // Put guard clause as well, in case clicked element does not have a parent element with '.workout' class.
-    if (!markerEl) return;
-
-    //console.log(markerEl.dataset.id);
-
-    const workout = this.#workouts.find(
-      wrkobj => wrkobj.id === markerEl.dataset.id
-    );
-
-    // # imp
-    this.#map.setView(workout.coords, 14, {
-      animate: true,
-      pan: {
-        duration: 1,
-      },
-    });
+  _renderWorkoutMarker(workout) {
+    L.marker(workout.coords)
+      .addTo(map)
+      .bindPopup(
+        L.popup({
+          maxWidth: 250,
+          maxHeight: 100,
+          closeOnClick: false,
+          className: `${workout.type}-popup`,
+          autoClose: false,
+        }).setContent('Workout')
+      )
+      .openPopup();
   }
 
-  _storeData() {
-    // setItem takes two parameters, key and value in string format.
+  _toggleInputType() {
+    cadenceInput.closest('.form__row').classList.toggle('form__row--hidden');
+    elevationGainInput
+      .closest('.form__row')
+      .classList.toggle('form__row--hidden');
+  }
+
+  _addToLocalStorage() {
     localStorage.setItem('workouts', JSON.stringify(this.#workouts));
   }
 
-  _getWorkoutData() {
+  _getLocalStorage() {
     const data = JSON.parse(localStorage.getItem('workouts'));
 
     if (!data) return;
     this.#workouts = data;
 
-    data.forEach(workout => this._renderWorkout(workout));
-
-    // data.forEach(workout => this._renderMarkerOnMap(workout));
-    // Add the workouts marker on the map after it is loaded.
+    this.#workouts.forEach(wrk => this._addWorkoutToSidebar(wrk));
   }
 }
 
